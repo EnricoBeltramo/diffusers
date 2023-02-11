@@ -77,7 +77,7 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
                 concept_threshold = self.concept_embeds_weights[concept_idx].item()
                 result_img["concept_scores"][concept_idx] = round(concept_cos - concept_threshold + adjustment, 3)
                 if result_img["concept_scores"][concept_idx] > 0:
-                    result_img["bad_concepts"].append(concept_idx)
+                    pass #result_img["bad_concepts"].append(concept_idx)
 
             result.append(result_img)
 
