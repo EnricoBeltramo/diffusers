@@ -61,11 +61,12 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
                 concept_threshold = self.concept_embeds_weights[concet_idx].item()
                 result_img["concept_scores"][concet_idx] = round(concept_cos - concept_threshold + adjustment, 3)
                 if result_img["concept_scores"][concet_idx] > 0:
-                    result_img["bad_concepts"].append(concet_idx)
+                    pass #result_img["bad_concepts"].append(concet_idx)
 
             result.append(result_img)
 
-        has_nsfw_concepts = [] #[len(res["bad_concepts"]) > 0 for res in result]
+        
+        has_nsfw_concepts = [len(res["bad_concepts"]) > 0 for res in result]
 
         for idx, has_nsfw_concept in enumerate(has_nsfw_concepts):
             if has_nsfw_concept:
