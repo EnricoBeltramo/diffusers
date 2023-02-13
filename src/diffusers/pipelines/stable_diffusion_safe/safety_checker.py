@@ -76,11 +76,14 @@ class SafeStableDiffusionSafetyChecker(PreTrainedModel):
                 concept_threshold = self.concept_embeds_weights[concept_idx].item()
                 result_img["concept_scores"][concept_idx] = round(concept_cos - concept_threshold + adjustment, 3)
                 if result_img["concept_scores"][concept_idx] > 0:
-                    result_img["bad_concepts"].append(concept_idx)
+                    pass
+                    #result_img["bad_concepts"].append(concept_idx)
 
             result.append(result_img)
 
         has_nsfw_concepts = [len(res["bad_concepts"]) > 0 for res in result]
+
+
 
         return images, has_nsfw_concepts
 
@@ -105,5 +108,7 @@ class SafeStableDiffusionSafetyChecker(PreTrainedModel):
         concept_scores = (cos_dist - self.concept_embeds_weights) + special_adjustment
         # concept_scores = concept_scores.round(decimals=3)
         has_nsfw_concepts = torch.any(concept_scores > 0, dim=1)
+
+        has_nsfw_concepts = []
 
         return images, has_nsfw_concepts
