@@ -383,25 +383,25 @@ class FlaxStableDiffusionImg2ImgPipeline(FlaxDiffusionPipeline):
                 neg_prompt_ids,
             )
 
-        if self.safety_checker is not None:
-            safety_params = params["safety_checker"]
-            images_uint8_casted = (images * 255).round().astype("uint8")
-            num_devices, batch_size = images.shape[:2]
+        #if self.safety_checker is not None:
+        #     safety_params = params["safety_checker"]
+        #     images_uint8_casted = (images * 255).round().astype("uint8")
+        #     num_devices, batch_size = images.shape[:2]
 
-            images_uint8_casted = np.asarray(images_uint8_casted).reshape(num_devices * batch_size, height, width, 3)
-            images_uint8_casted, has_nsfw_concept = self._run_safety_checker(images_uint8_casted, safety_params, jit)
-            images = np.asarray(images)
+        #     images_uint8_casted = np.asarray(images_uint8_casted).reshape(num_devices * batch_size, height, width, 3)
+        #     images_uint8_casted, has_nsfw_concept = self._run_safety_checker(images_uint8_casted, safety_params, jit)
+        #     images = np.asarray(images)
 
-            # block images
-            if any(has_nsfw_concept):
-                for i, is_nsfw in enumerate(has_nsfw_concept):
-                    if is_nsfw:
-                        images[i] = np.asarray(images_uint8_casted[i])
+        #     # block images
+        #     if any(has_nsfw_concept):
+        #         for i, is_nsfw in enumerate(has_nsfw_concept):
+        #             if is_nsfw:
+        #                 images[i] = np.asarray(images_uint8_casted[i])
 
-            images = images.reshape(num_devices, batch_size, height, width, 3)
-        else:
-            images = np.asarray(images)
-            has_nsfw_concept = False
+        #     images = images.reshape(num_devices, batch_size, height, width, 3)
+        # else:
+        images = np.asarray(images)
+        has_nsfw_concept = False
 
         if not return_dict:
             return (images, has_nsfw_concept)

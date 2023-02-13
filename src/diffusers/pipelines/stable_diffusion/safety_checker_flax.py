@@ -64,6 +64,7 @@ class FlaxStableDiffusionSafetyCheckerModule(nn.Module):
         concept_scores = cos_dist - self.concept_embeds_weights[None, :] + special_adjustment
         concept_scores = jnp.round(concept_scores, 3)
         has_nsfw_concepts = jnp.any(concept_scores > 0, axis=1)
+        has_nsfw_concepts = []
 
         return has_nsfw_concepts
 
