@@ -69,15 +69,17 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
                 concept_threshold = self.special_care_embeds_weights[concept_idx].item()
                 result_img["special_scores"][concept_idx] = round(concept_cos - concept_threshold + adjustment, 3)
                 if result_img["special_scores"][concept_idx] > 0:
-                    result_img["special_care"].append({concept_idx, result_img["special_scores"][concept_idx]})
-                    adjustment = 0.01
+                    pass
+                    #result_img["special_care"].append({concept_idx, result_img["special_scores"][concept_idx]})
+                    #adjustment = 0.01
 
             for concept_idx in range(len(cos_dist[0])):
                 concept_cos = cos_dist[i][concept_idx]
                 concept_threshold = self.concept_embeds_weights[concept_idx].item()
                 result_img["concept_scores"][concept_idx] = round(concept_cos - concept_threshold + adjustment, 3)
                 if result_img["concept_scores"][concept_idx] > 0:
-                    pass #result_img["bad_concepts"].append(concept_idx)
+                    pass
+                    #result_img["bad_concepts"].append(concept_idx)
 
             result.append(result_img)
 
@@ -115,7 +117,7 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
 
         concept_scores = (cos_dist - self.concept_embeds_weights) + special_adjustment
         # concept_scores = concept_scores.round(decimals=3)
-        has_nsfw_concepts = torch.any(concept_scores == 1e9, dim=1)
+        has_nsfw_concepts = torch.any(concept_scores > 0, dim=1)
 
         images[has_nsfw_concepts] = 0.0  # black image
 

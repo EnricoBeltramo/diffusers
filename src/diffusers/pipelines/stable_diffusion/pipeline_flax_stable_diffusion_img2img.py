@@ -383,7 +383,7 @@ class FlaxStableDiffusionImg2ImgPipeline(FlaxDiffusionPipeline):
                 neg_prompt_ids,
             )
 
-        #if self.safety_checker is not None:
+        # if self.safety_checker is not None:
         #     safety_params = params["safety_checker"]
         #     images_uint8_casted = (images * 255).round().astype("uint8")
         #     num_devices, batch_size = images.shape[:2]
