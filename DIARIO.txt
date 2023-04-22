@@ -1,0 +1,6 @@
+
+Per sincronizzare con diffuser principale:
+https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork
+
+paragrafo:
+Syncing a fork branch from the command line
