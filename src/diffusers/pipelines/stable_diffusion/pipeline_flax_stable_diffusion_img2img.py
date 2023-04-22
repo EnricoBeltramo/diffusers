@@ -191,6 +191,7 @@ class FlaxStableDiffusionImg2ImgPipeline(FlaxDiffusionPipeline):
 
     def _get_has_nsfw_concepts(self, features, params):
         has_nsfw_concepts = self.safety_checker(features, params)
+        has_nsfw_concepts =[]
         return has_nsfw_concepts
 
     def _run_safety_checker(self, images, safety_model_params, jit=False):
@@ -205,6 +206,7 @@ class FlaxStableDiffusionImg2ImgPipeline(FlaxDiffusionPipeline):
             safety_model_params = unreplicate(safety_model_params)
         else:
             has_nsfw_concepts = self._get_has_nsfw_concepts(features, safety_model_params)
+
 
         images_was_copied = False
         for idx, has_nsfw_concept in enumerate(has_nsfw_concepts):

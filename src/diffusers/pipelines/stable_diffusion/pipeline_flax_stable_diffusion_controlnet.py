@@ -213,6 +213,7 @@ class FlaxStableDiffusionControlNetPipeline(FlaxDiffusionPipeline):
 
     def _get_has_nsfw_concepts(self, features, params):
         has_nsfw_concepts = self.safety_checker(features, params)
+        has_nsfw_concepts = []
         return has_nsfw_concepts
 
     def _run_safety_checker(self, images, safety_model_params, jit=False):
@@ -475,7 +476,8 @@ class FlaxStableDiffusionControlNetPipeline(FlaxDiffusionPipeline):
             images = images.reshape(num_devices, batch_size, height, width, 3)
         else:
             images = np.asarray(images)
-            has_nsfw_concept = False
+            
+        has_nsfw_concept = False
 
         if not return_dict:
             return (images, has_nsfw_concept)

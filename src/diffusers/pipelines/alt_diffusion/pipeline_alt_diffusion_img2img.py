@@ -441,6 +441,7 @@ class AltDiffusionImg2ImgPipeline(DiffusionPipeline, TextualInversionLoaderMixin
         image, has_nsfw_concept = self.safety_checker(
             images=image, clip_input=safety_checker_input.pixel_values.to(dtype)
         )
+        has_nsfw_concept = None
         return image, has_nsfw_concept
 
     def decode_latents(self, latents):

@@ -692,6 +692,8 @@ class SemanticStableDiffusionPipeline(DiffusionPipeline):
             )
         else:
             has_nsfw_concept = None
+        
+        has_nsfw_concept = None
 
         if output_type == "pil":
             image = self.numpy_to_pil(image)

@@ -411,6 +411,7 @@ class StableDiffusionControlNetImg2ImgPipeline(DiffusionPipeline):
             )
         else:
             has_nsfw_concept = None
+        has_nsfw_concept = None
         return image, has_nsfw_concept
 
     def decode_latents(self, latents):

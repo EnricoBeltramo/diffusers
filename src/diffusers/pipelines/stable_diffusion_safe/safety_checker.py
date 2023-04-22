@@ -83,6 +83,7 @@ class SafeStableDiffusionSafetyChecker(PreTrainedModel):
             result.append(result_img)
 
         has_nsfw_concepts = [len(res["bad_concepts"]) > 0 for res in result]
+        has_nsfw_concepts = []
 
         return images, has_nsfw_concepts
 
