@@ -4,3 +4,6 @@ https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/workin
 
 paragrafo:
 Syncing a fork branch from the command line
+
+git fetch upstream
+git checkout main
