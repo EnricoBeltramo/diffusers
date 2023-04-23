@@ -662,11 +662,6 @@ def main(args):
                         {"test_samples": [wandb.Image(img) for img in images_processed], "epoch": epoch},
                         step=global_step,
                     )
-                elif args.logger == "wandb":
-                    accelerator.get_tracker("wandb").log(
-                        {"test_samples": [wandb.Image(img) for img in images_processed], "epoch": epoch},
-                        step=global_step,
-                    )
 
             if epoch % args.save_model_epochs == 0 or epoch == args.num_epochs - 1:
                 # save the model

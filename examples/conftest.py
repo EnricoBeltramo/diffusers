@@ -15,7 +15,6 @@
 # tests directory-specific settings - this file is run automatically
 # by pytest before any tests are run
 
-
 import sys
 import warnings
 from os.path import abspath, dirname, join

@@ -16,7 +16,6 @@
 
 import inspect
 import os
-import warnings
 from functools import partial
 from typing import Any, Callable, List, Optional, Tuple, Union
 
@@ -26,7 +25,6 @@ from torch import Tensor, device
 from .. import __version__
 from ..utils import (
     CONFIG_NAME,
-    DEPRECATED_REVISION_ARGS,
     DIFFUSERS_CACHE,
     FLAX_WEIGHTS_NAME,
     HF_HUB_OFFLINE,
@@ -140,15 +138,6 @@ def _load_state_dict_into_model(model_to_load, state_dict):
     load(model_to_load)
 
     return error_msgs
-
-
-def _add_variant(weights_name: str, variant: Optional[str] = None) -> str:
-    if variant is not None:
-        splits = weights_name.split(".")
-        splits = splits[:-1] + [variant] + splits[-1:]
-        weights_name = ".".join(splits)
-
-    return weights_name
 
 
 class ModelMixin(torch.nn.Module):
