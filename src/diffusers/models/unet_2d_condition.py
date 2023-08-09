@@ -735,12 +735,6 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
                 If `return_dict` is True, an [`~models.unet_2d_condition.UNet2DConditionOutput`] is returned, otherwise
                 a `tuple` is returned where the first element is the sample tensor.
         """
-        # EBR
-        # try fix bug SDXL
-        if added_cond_kwargs is None:
-            added_cond_kwargs = {}
-        # EBR
-
         # By default samples have to be AT least a multiple of the overall upsampling factor.
         # The overall upsampling factor is equal to 2 ** (# num of upsampling layers).
         # However, the upsampling interpolation output size can be forced to fit any upsampling size
