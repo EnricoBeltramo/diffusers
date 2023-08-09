@@ -12,18 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import warnings
-from functools import partial
-from typing import Dict, List, Optional, Union
+# NOTE: This file is deprecated and will be removed in a future version.
+# It only exists so that temporarely `from diffusers.pipelines import DiffusionPipeline` works
 
-import jax
-import jax.numpy as jnp
-import numpy as np
-from flax.core.frozen_dict import FrozenDict
-from flax.jax_utils import unreplicate
-from flax.training.common_utils import shard
-from PIL import Image
-from transformers import CLIPFeatureExtractor, CLIPTokenizer, FlaxCLIPTextModel
+from ...utils import deprecate
+from ..controlnet.pipeline_flax_controlnet import FlaxStableDiffusionControlNetPipeline  # noqa: F401
 
 from ...models import FlaxAutoencoderKL, FlaxControlNetModel, FlaxUNet2DConditionModel
 from ...schedulers import (
@@ -492,48 +485,3 @@ class FlaxStableDiffusionControlNetPipeline(FlaxDiffusionPipeline):
     in_axes=(None, 0, 0, 0, 0, None, 0, 0, 0, 0),
     static_broadcasted_argnums=(0, 5),
 )
-def _p_generate(
-    pipe,
-    prompt_ids,
-    image,
-    params,
-    prng_seed,
-    num_inference_steps,
-    guidance_scale,
-    latents,
-    neg_prompt_ids,
-    controlnet_conditioning_scale,
-):
-    return pipe._generate(
-        prompt_ids,
-        image,
-        params,
-        prng_seed,
-        num_inference_steps,
-        guidance_scale,
-        latents,
-        neg_prompt_ids,
-        controlnet_conditioning_scale,
-    )
-
-
-@partial(jax.pmap, static_broadcasted_argnums=(0,))
-def _p_get_has_nsfw_concepts(pipe, features, params):
-    return pipe._get_has_nsfw_concepts(features, params)
-
-
-def unshard(x: jnp.ndarray):
-    # einops.rearrange(x, 'd b ... -> (d b) ...')
-    num_devices, batch_size = x.shape[:2]
-    rest = x.shape[2:]
-    return x.reshape(num_devices * batch_size, *rest)
-
-
-def preprocess(image, dtype):
-    image = image.convert("RGB")
-    w, h = image.size
-    w, h = (x - x % 64 for x in (w, h))  # resize to integer multiple of 64
-    image = image.resize((w, h), resample=PIL_INTERPOLATION["lanczos"])
-    image = jnp.array(image).astype(dtype) / 255.0
-    image = image[None].transpose(0, 3, 1, 2)
-    return image

@@ -46,6 +46,8 @@ def preprocess(image):
 
 
 class OnnxStableDiffusionUpscalePipeline(StableDiffusionUpscalePipeline):
+    _is_onnx = True
+
     def __init__(
         self,
         vae: OnnxRuntimeModel,
@@ -56,7 +58,18 @@ class OnnxStableDiffusionUpscalePipeline(StableDiffusionUpscalePipeline):
         scheduler: Any,
         max_noise_level: int = 350,
     ):
-        super().__init__(vae, text_encoder, tokenizer, unet, low_res_scheduler, scheduler, max_noise_level)
+        super().__init__(
+            vae=vae,
+            text_encoder=text_encoder,
+            tokenizer=tokenizer,
+            unet=unet,
+            low_res_scheduler=low_res_scheduler,
+            scheduler=scheduler,
+            safety_checker=None,
+            feature_extractor=None,
+            watermarker=None,
+            max_noise_level=max_noise_level,
+        )
 
     def __call__(
         self,

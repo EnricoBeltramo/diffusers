@@ -20,14 +20,12 @@ import numpy as np
 import torch
 from torch import nn
 
-from diffusers.models.attention import GEGLU, AdaLayerNorm, ApproximateGELU, AttentionBlock
+from diffusers.models.attention import GEGLU, AdaLayerNorm, ApproximateGELU
 from diffusers.models.embeddings import get_timestep_embedding
+from diffusers.models.lora import LoRACompatibleLinear
 from diffusers.models.resnet import Downsample2D, ResnetBlock2D, Upsample2D
 from diffusers.models.transformer_2d import Transformer2DModel
 from diffusers.utils import torch_device
-
-
-torch.backends.cuda.matmul.allow_tf32 = False
 
 
 class EmbeddingsTests(unittest.TestCase):
@@ -314,59 +312,6 @@ class ResnetBlock2DTests(unittest.TestCase):
         assert torch.allclose(output_slice.flatten(), expected_slice, atol=1e-3)
 
 
-class AttentionBlockTests(unittest.TestCase):
-    @unittest.skipIf(
-        torch_device == "mps", "Matmul crashes on MPS, see https://github.com/pytorch/pytorch/issues/84039"
-    )
-    def test_attention_block_default(self):
-        torch.manual_seed(0)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(0)
-
-        sample = torch.randn(1, 32, 64, 64).to(torch_device)
-        attentionBlock = AttentionBlock(
-            channels=32,
-            num_head_channels=1,
-            rescale_output_factor=1.0,
-            eps=1e-6,
-            norm_num_groups=32,
-        ).to(torch_device)
-        with torch.no_grad():
-            attention_scores = attentionBlock(sample)
-
-        assert attention_scores.shape == (1, 32, 64, 64)
-        output_slice = attention_scores[0, -1, -3:, -3:]
-
-        expected_slice = torch.tensor(
-            [-1.4975, -0.0038, -0.7847, -1.4567, 1.1220, -0.8962, -1.7394, 1.1319, -0.5427], device=torch_device
-        )
-        assert torch.allclose(output_slice.flatten(), expected_slice, atol=1e-3)
-
-    def test_attention_block_sd(self):
-        # This version uses SD params and is compatible with mps
-        torch.manual_seed(0)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(0)
-
-        sample = torch.randn(1, 512, 64, 64).to(torch_device)
-        attentionBlock = AttentionBlock(
-            channels=512,
-            rescale_output_factor=1.0,
-            eps=1e-6,
-            norm_num_groups=32,
-        ).to(torch_device)
-        with torch.no_grad():
-            attention_scores = attentionBlock(sample)
-
-        assert attention_scores.shape == (1, 512, 64, 64)
-        output_slice = attention_scores[0, -1, -3:, -3:]
-
-        expected_slice = torch.tensor(
-            [-0.6621, -0.0156, -3.2766, 0.8025, -0.8609, 0.2820, 0.0905, -1.1179, -3.2126], device=torch_device
-        )
-        assert torch.allclose(output_slice.flatten(), expected_slice, atol=1e-3)
-
-
 class Transformer2DModelTests(unittest.TestCase):
     def test_spatial_transformer_default(self):
         torch.manual_seed(0)
@@ -538,7 +483,7 @@ class Transformer2DModelTests(unittest.TestCase):
 
         assert spatial_transformer_block.transformer_blocks[0].ff.net[0].__class__ == GEGLU
         assert spatial_transformer_block.transformer_blocks[0].ff.net[1].__class__ == nn.Dropout
-        assert spatial_transformer_block.transformer_blocks[0].ff.net[2].__class__ == nn.Linear
+        assert spatial_transformer_block.transformer_blocks[0].ff.net[2].__class__ == LoRACompatibleLinear
 
         dim = 32
         inner_dim = 128
@@ -562,7 +507,7 @@ class Transformer2DModelTests(unittest.TestCase):
 
         assert spatial_transformer_block.transformer_blocks[0].ff.net[0].__class__ == ApproximateGELU
         assert spatial_transformer_block.transformer_blocks[0].ff.net[1].__class__ == nn.Dropout
-        assert spatial_transformer_block.transformer_blocks[0].ff.net[2].__class__ == nn.Linear
+        assert spatial_transformer_block.transformer_blocks[0].ff.net[2].__class__ == LoRACompatibleLinear
 
         dim = 32
         inner_dim = 128
