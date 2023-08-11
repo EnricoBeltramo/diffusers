@@ -1339,6 +1339,7 @@ def main(args):
                     )
 
         # EBR
+        logging.info('Save model to: ' + args.output_dir)
         #if args.push_to_hub:
         save_model_card(
             repo_id,
