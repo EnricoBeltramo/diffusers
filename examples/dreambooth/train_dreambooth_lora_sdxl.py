@@ -41,6 +41,9 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer, PretrainedConfig
+import gc
+
+
 
 import diffusers
 from diffusers import (
@@ -61,6 +64,11 @@ from diffusers.utils.import_utils import is_xformers_available
 check_min_version("0.20.0.dev0")
 
 logger = get_logger(__name__)
+
+
+def cleanMemory():
+    gc.collect()
+    torch.cuda.empty_cache()
 
 
 def save_model_card(
@@ -1313,6 +1321,8 @@ def main(args):
 
         # load attention processors
         pipeline.load_lora_weights(args.output_dir)
+
+        cleanMemory()
 
         # run inference
         images = []
