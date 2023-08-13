@@ -1199,16 +1199,16 @@ def main(args):
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
 
                         # EBR move to cpu to reduce memory
-                        cleanMemory()
-                        default_device = accelerator.device
-                        acceleratorToDevice(accelerator,'cpu')
-                        cleanMemory()
+                        # cleanMemory()
+                        # default_device = accelerator.device
+                        # acceleratorToDevice(accelerator,'cpu')
+                        # cleanMemory()
 
                         accelerator.save_state(save_path)
 
                         # EBR move back to original device
-                        cleanMemory()
-                        acceleratorToDevice(accelerator,default_device)
+                        # cleanMemory()
+                        # acceleratorToDevice(accelerator,default_device)
                             
                         logger.info(f"Saved state to {save_path}")
 
@@ -1291,6 +1291,36 @@ def main(args):
     # Save the lora layers
     accelerator.wait_for_everyone()
     if accelerator.is_main_process:
+
+        # _before_ saving state, check if this save would set us over the
+        # `checkpoints_total_limit`
+        # EBR added store checkpoint here
+        if args.checkpoints_total_limit is not None:
+            checkpoints = os.listdir(args.output_dir)
+            checkpoints = [d for d in checkpoints if d.startswith("checkpoint")]
+            checkpoints = sorted(checkpoints, key=lambda x: int(x.split("-")[1]))
+
+            # before we save the new checkpoint, we need to have at _most_ `checkpoints_total_limit - 1` checkpoints
+            if len(checkpoints) >= args.checkpoints_total_limit:
+                num_to_remove = len(checkpoints) - args.checkpoints_total_limit + 1
+                removing_checkpoints = checkpoints[0:num_to_remove]
+
+                logger.info(
+                    f"{len(checkpoints)} checkpoints already exist, removing {len(removing_checkpoints)} checkpoints"
+                )
+                logger.info(f"removing checkpoints: {', '.join(removing_checkpoints)}")
+
+                for removing_checkpoint in removing_checkpoints:
+                    removing_checkpoint = os.path.join(args.output_dir, removing_checkpoint)
+                    shutil.rmtree(removing_checkpoint)
+
+        save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+
+        accelerator.save_state(save_path)
+
+        logger.info(f"Saved state to {save_path}")
+        # EBR added store checkpoint here
+
         unet = accelerator.unwrap_model(unet)
         unet = unet.to(torch.float32)
         unet_lora_layers = unet_attn_processors_state_dict(unet)
