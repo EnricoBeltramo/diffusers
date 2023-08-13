@@ -1295,6 +1295,7 @@ def main(args):
         # _before_ saving state, check if this save would set us over the
         # `checkpoints_total_limit`
         # EBR added store checkpoint here
+
         if args.checkpoints_total_limit is not None:
             checkpoints = os.listdir(args.output_dir)
             checkpoints = [d for d in checkpoints if d.startswith("checkpoint")]
@@ -1316,7 +1317,12 @@ def main(args):
 
         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
 
+        cleanMemory()
+        default_device = accelerator.device
+        acceleratorToDevice(accelerator,'cpu')
+        cleanMemory()
         accelerator.save_state(save_path)
+        cleanMemory()
 
         logger.info(f"Saved state to {save_path}")
         # EBR added store checkpoint here
