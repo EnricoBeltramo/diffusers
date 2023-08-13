@@ -127,6 +127,11 @@ def import_model_class_from_model_name_or_path(
         raise ValueError(f"{model_class} is not supported.")
 
 
+def acceleratorToDevice(accelerator,device):
+    for i, model in enumerate(accelerator._models):
+        model.to(device)
+
+
 def parse_args(input_args=None):
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument(
@@ -1192,7 +1197,19 @@ def main(args):
                                     shutil.rmtree(removing_checkpoint)
 
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+
+                        # EBR move to cpu to reduce memory
+                        cleanMemory()
+                        default_device = accelerator.device
+                        acceleratorToDevice(accelerator,'cpu')
+                        cleanMemory()
+
                         accelerator.save_state(save_path)
+
+                        # EBR move back to original device
+                        cleanMemory()
+                        acceleratorToDevice(accelerator,default_device)
+                            
                         logger.info(f"Saved state to {save_path}")
 
             logs = {"loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
