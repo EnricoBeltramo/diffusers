@@ -468,11 +468,14 @@ class FlaxModelMixin(PushToHubMixin):
             del state[unexpected_key]
 
         if len(unexpected_keys) > 0:
+            # logger.warning(
+            #     f"Some weights of the model checkpoint at {pretrained_model_name_or_path} were not used when"
+            #     f" initializing {model.__class__.__name__}: {unexpected_keys}\n- This IS expected if you are"
+            #     f" initializing {model.__class__.__name__} from the checkpoint of a model trained on another task or"
+            #     " with another architecture."
+            # )
             logger.warning(
                 f"Some weights of the model checkpoint at {pretrained_model_name_or_path} were not used when"
-                f" initializing {model.__class__.__name__}: {unexpected_keys}\n- This IS expected if you are"
-                f" initializing {model.__class__.__name__} from the checkpoint of a model trained on another task or"
-                " with another architecture."
             )
         else:
             logger.info(f"All model checkpoint weights were used when initializing {model.__class__.__name__}.\n")
