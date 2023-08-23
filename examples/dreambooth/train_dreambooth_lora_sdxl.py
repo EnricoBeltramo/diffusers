@@ -1328,14 +1328,14 @@ def main(args):
         # EBR added store checkpoint here
 
         unet = accelerator.unwrap_model(unet)
-        unet = unet.to(torch.float32)
+        unet = unet.to(accelerator.device)
         unet_lora_layers = unet_attn_processors_state_dict(unet)
 
         if args.train_text_encoder:
             text_encoder_one = accelerator.unwrap_model(text_encoder_one)
-            text_encoder_lora_layers = text_encoder_lora_state_dict(text_encoder_one.to(torch.float32))
+            text_encoder_lora_layers = text_encoder_lora_state_dict(text_encoder_one.to(accelerator.device))
             text_encoder_two = accelerator.unwrap_model(text_encoder_two)
-            text_encoder_2_lora_layers = text_encoder_lora_state_dict(text_encoder_two.to(torch.float32))
+            text_encoder_2_lora_layers = text_encoder_lora_state_dict(text_encoder_two.to(accelerator.device))
         else:
             text_encoder_lora_layers = None
             text_encoder_2_lora_layers = None
