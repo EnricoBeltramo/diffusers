@@ -1219,16 +1219,16 @@ def main(args):
 
         # Final inference
         # Load previous pipeline
-        vae = AutoencoderKL.from_pretrained(
-            vae_path,
-            subfolder="vae" if args.pretrained_vae_model_name_or_path is None else None,
-            revision=args.revision,
-            torch_dtype=weight_dtype,
-        )
-        pipeline = StableDiffusionXLPipeline.from_pretrained(
-            args.pretrained_model_name_or_path, vae=vae, revision=args.revision, torch_dtype=weight_dtype
-        )
-        pipeline = pipeline.to(accelerator.device)
+        # vae = AutoencoderKL.from_pretrained(
+        #     vae_path,
+        #     subfolder="vae" if args.pretrained_vae_model_name_or_path is None else None,
+        #     revision=args.revision,
+        #     torch_dtype=weight_dtype,
+        # )
+        # pipeline = StableDiffusionXLPipeline.from_pretrained(
+        #     args.pretrained_model_name_or_path, vae=vae, revision=args.revision, torch_dtype=weight_dtype
+        # )
+        # pipeline = pipeline.to(accelerator.device)
 
         # # load attention processors
         # pipeline.load_lora_weights(args.output_dir)
