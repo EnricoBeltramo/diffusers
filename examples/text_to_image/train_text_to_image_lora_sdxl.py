@@ -1256,22 +1256,22 @@ def main(args):
         #                 }
         #             )
 
-        # if args.push_to_hub:
-        #     save_model_card(
-        #         repo_id,
-        #         images=images,
-        #         base_model=args.pretrained_model_name_or_path,
-        #         dataset_name=args.dataset_name,
-        #         train_text_encoder=args.train_text_encoder,
-        #         repo_folder=args.output_dir,
-        #         vae_path=args.pretrained_vae_model_name_or_path,
-        #     )
-        #     upload_folder(
-        #         repo_id=repo_id,
-        #         folder_path=args.output_dir,
-        #         commit_message="End of training",
-        #         ignore_patterns=["step_*", "epoch_*"],
-        #     )
+        if args.push_to_hub:
+            save_model_card(
+                repo_id,
+                images=images,
+                base_model=args.pretrained_model_name_or_path,
+                dataset_name=args.dataset_name,
+                train_text_encoder=args.train_text_encoder,
+                repo_folder=args.output_dir,
+                vae_path=args.pretrained_vae_model_name_or_path,
+            )
+            upload_folder(
+                repo_id=repo_id,
+                folder_path=args.output_dir,
+                commit_message="End of training",
+                ignore_patterns=["step_*", "epoch_*"],
+            )
 
     accelerator.end_training()
 
