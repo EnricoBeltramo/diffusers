@@ -7,3 +7,4 @@ Syncing a fork branch from the command line
 
 git fetch upstream
 git checkout main
+git merge upstream/main
