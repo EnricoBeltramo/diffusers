@@ -42,6 +42,7 @@ from torchvision import transforms
 from torchvision.transforms.functional import crop
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer, PretrainedConfig
+from huggingface_hub import Repository
 
 import diffusers
 from diffusers import (
@@ -531,9 +532,13 @@ def main(args):
             os.makedirs(args.output_dir, exist_ok=True)
 
         if args.push_to_hub:
-            repo_id = create_repo(
-                repo_id=args.hub_model_id or Path(args.output_dir).name, exist_ok=True, token=args.hub_token
-            ).repo_id
+
+            if args.hub_token is None:
+                repo_id = Repository(local_dir=Path(args.output_dir).name).repo_id
+            else:
+                repo_id = create_repo(
+                    repo_id=args.hub_model_id or Path(args.output_dir).name, exist_ok=True, token=args.hub_token
+                ).repo_id
 
     # Load the tokenizers
     tokenizer_one = AutoTokenizer.from_pretrained(
@@ -1060,8 +1065,28 @@ def main(args):
                                     shutil.rmtree(removing_checkpoint)
 
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+
+                        gc.collect()
+                        torch.cuda.empty_cache()
+
+                        vae.to('cpu', dtype=torch.float32)
+                        text_encoder_one.to('cpu', dtype=weight_dtype)
+                        text_encoder_two.to('cpu', dtype=weight_dtype)
+                        ema_unet.to('cpu')
+
                         accelerator.save_state(save_path)
                         logger.info(f"Saved state to {save_path}")
+
+                        gc.collect()
+                        torch.cuda.empty_cache()
+
+                        vae.to(accelerator.device, dtype=torch.float32)
+                        text_encoder_one.to(accelerator.device, dtype=weight_dtype)
+                        text_encoder_two.to(accelerator.device, dtype=weight_dtype)
+                        ema_unet.to(accelerator.device)
+
+                        gc.collect()
+                        torch.cuda.empty_cache()                        
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
