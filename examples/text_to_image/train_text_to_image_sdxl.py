@@ -1069,10 +1069,14 @@ def main(args):
                         gc.collect()
                         torch.cuda.empty_cache()
 
+                        logger.info('MOVING TO CPU...')
+
                         vae.to('cpu', dtype=torch.float32)
                         text_encoder_one.to('cpu', dtype=weight_dtype)
                         text_encoder_two.to('cpu', dtype=weight_dtype)
                         ema_unet.to('cpu')
+
+                        logger.info('MOVING TO CPU... done')
 
                         accelerator.save_state(save_path)
                         logger.info(f"Saved state to {save_path}")
@@ -1080,10 +1084,14 @@ def main(args):
                         gc.collect()
                         torch.cuda.empty_cache()
 
+                        logger.info('MOVING BACK TO DEVICE...')
+
                         vae.to(accelerator.device, dtype=torch.float32)
                         text_encoder_one.to(accelerator.device, dtype=weight_dtype)
                         text_encoder_two.to(accelerator.device, dtype=weight_dtype)
                         ema_unet.to(accelerator.device)
+
+                        logger.info('MOVING BACK TO DEVICE... done')
 
                         gc.collect()
                         torch.cuda.empty_cache()                        
