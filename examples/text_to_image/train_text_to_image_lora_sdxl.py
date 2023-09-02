@@ -1132,6 +1132,8 @@ def main(args):
                                     shutil.rmtree(removing_checkpoint)
 
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+
+                        logger.info('MOVING TO CPU...')
                         gc.collect()
                         torch.cuda.empty_cache()
                         unet.to('cpu', dtype=weight_dtype)
@@ -1143,7 +1145,12 @@ def main(args):
                         text_encoder_two.to('cpu', dtype=weight_dtype)
                         gc.collect()
                         torch.cuda.empty_cache()
+
+                        logger.info('SAVING...')
+
                         accelerator.save_state(save_path)
+
+                        logger.info('MOVING TO GPU...')
                         logger.info(f"Saved state to {save_path}")
                         gc.collect()
                         torch.cuda.empty_cache()
