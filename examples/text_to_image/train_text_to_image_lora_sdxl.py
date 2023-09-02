@@ -65,7 +65,7 @@ logger = get_logger(__name__)
 
 
 
-logger.info('--------------------------X EBR VARIANT X --------------------------------------')
+#logger.info('--------------------------X EBR VARIANT X --------------------------------------')
 
 
 def save_model_card(
