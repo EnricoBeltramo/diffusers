@@ -24,6 +24,7 @@ import random
 import shutil
 from pathlib import Path
 from typing import Dict
+import gc
 
 import datasets
 import numpy as np
@@ -1131,8 +1132,30 @@ def main(args):
                                     shutil.rmtree(removing_checkpoint)
 
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+                        gc.collect()
+                        torch.cuda.empty_cache()
+                        unet.to('cpu', dtype=weight_dtype)
+                        if args.pretrained_vae_model_name_or_path is None:
+                            vae.to('cpu', dtype=torch.float32)
+                        else:
+                            vae.to('cpu', dtype=weight_dtype)
+                        text_encoder_one.to('cpu', dtype=weight_dtype)
+                        text_encoder_two.to('cpu', dtype=weight_dtype)
+                        gc.collect()
+                        torch.cuda.empty_cache()
                         accelerator.save_state(save_path)
                         logger.info(f"Saved state to {save_path}")
+                        gc.collect()
+                        torch.cuda.empty_cache()
+                        unet.to(accelerator.device, dtype=weight_dtype)
+                        if args.pretrained_vae_model_name_or_path is None:
+                            vae.to(accelerator.device, dtype=torch.float32)
+                        else:
+                            vae.to(accelerator.device, dtype=weight_dtype)
+                        text_encoder_one.to(accelerator.device, dtype=weight_dtype)
+                        text_encoder_two.to(accelerator.device, dtype=weight_dtype)
+                        gc.collect()
+                        torch.cuda.empty_cache()
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
