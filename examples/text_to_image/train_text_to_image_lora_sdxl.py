@@ -1150,16 +1150,16 @@ def main(args):
                         # text_encoder_two.to('cpu', dtype=weight_dtype)
                         # gc.collect()
                         # torch.cuda.empty_cache()
-                        vae.to(accelerator.device, dtype=weight_dtype)
+                        #vae.to(accelerator.device, dtype=weight_dtype)
                         gc.collect()
                         torch.cuda.empty_cache()                            
                         logger.info('SAVING...')
 
                         accelerator.save_state(save_path)
-                        if args.pretrained_vae_model_name_or_path is None:
-                            vae.to(accelerator.device, dtype=torch.float32)
-                        else:
-                            vae.to(accelerator.device, dtype=weight_dtype)
+                        # if args.pretrained_vae_model_name_or_path is None:
+                        #     vae.to(accelerator.device, dtype=torch.float32)
+                        # else:
+                        #     vae.to(accelerator.device, dtype=weight_dtype)
                         # logger.info('MOVING TO GPU...')
                         # logger.info(f"Saved state to {save_path}")
                         # gc.collect()
