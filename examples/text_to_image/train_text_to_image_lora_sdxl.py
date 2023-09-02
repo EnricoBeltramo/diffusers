@@ -24,7 +24,6 @@ import random
 import shutil
 from pathlib import Path
 from typing import Dict
-import gc
 
 import datasets
 import numpy as np
@@ -56,16 +55,11 @@ from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version, is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
 
-logging.basicConfig(level=logging.INFO)
 
 # Will error if the minimal version of diffusers is not installed. Remove at your own risks.
 check_min_version("0.21.0.dev0")
 
 logger = get_logger(__name__)
-
-
-
-#logger.info('--------------------------X EBR VARIANT X --------------------------------------')
 
 
 def save_model_card(
@@ -402,16 +396,6 @@ def parse_args(input_args=None):
             " flag passed with the `accelerate.launch` command. Use this argument to override the accelerate config."
         ),
     )
-    parser.add_argument(
-        "--prior_generation_precision",
-        type=str,
-        default=None,
-        choices=["no", "fp32", "fp16", "bf16"],
-        help=(
-            "Choose prior generation precision between fp32, fp16 and bf16 (bfloat16). Bf16 requires PyTorch >="
-            " 1.10.and an Nvidia Ampere GPU.  Default to  fp16 if a GPU is available else fp32."
-        ),
-    )
     parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
     parser.add_argument(
         "--enable_xformers_memory_efficient_attention", action="store_true", help="Whether or not to use xformers."
@@ -730,11 +714,15 @@ def main(args):
 
         lora_state_dict, network_alphas = LoraLoaderMixin.lora_state_dict(input_dir)
         LoraLoaderMixin.load_lora_into_unet(lora_state_dict, network_alphas=network_alphas, unet=unet_)
+
+        text_encoder_state_dict = {k: v for k, v in lora_state_dict.items() if "text_encoder." in k}
         LoraLoaderMixin.load_lora_into_text_encoder(
-            lora_state_dict, network_alphas=network_alphas, text_encoder=text_encoder_one_
+            text_encoder_state_dict, network_alphas=network_alphas, text_encoder=text_encoder_one_
         )
+
+        text_encoder_2_state_dict = {k: v for k, v in lora_state_dict.items() if "text_encoder_2." in k}
         LoraLoaderMixin.load_lora_into_text_encoder(
-            lora_state_dict, network_alphas=network_alphas, text_encoder=text_encoder_two_
+            text_encoder_2_state_dict, network_alphas=network_alphas, text_encoder=text_encoder_two_
         )
 
     accelerator.register_save_state_pre_hook(save_model_hook)
@@ -1008,9 +996,12 @@ def main(args):
                 continue
 
             with accelerator.accumulate(unet):
-                pixel_values = batch["pixel_values"].to(dtype=weight_dtype)
-
                 # Convert images to latent space
+                if args.pretrained_vae_model_name_or_path is not None:
+                    pixel_values = batch["pixel_values"].to(dtype=weight_dtype)
+                else:
+                    pixel_values = batch["pixel_values"]
+
                 model_input = vae.encode(pixel_values).latent_dist.sample()
                 model_input = model_input * vae.config.scaling_factor
                 if args.pretrained_vae_model_name_or_path is None:
@@ -1137,42 +1128,8 @@ def main(args):
                                     shutil.rmtree(removing_checkpoint)
 
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
-
-                        logger.info('MOVING TO CPU...')
-                        gc.collect()
-                        torch.cuda.empty_cache()
-                        # unet.to('cpu', dtype=weight_dtype)
-                        # if args.pretrained_vae_model_name_or_path is None:
-                        #     vae.to('cpu', dtype=torch.float32)
-                        # else:
-                        #     vae.to('cpu', dtype=weight_dtype)
-                        # text_encoder_one.to('cpu', dtype=weight_dtype)
-                        # text_encoder_two.to('cpu', dtype=weight_dtype)
-                        # gc.collect()
-                        # torch.cuda.empty_cache()
-                        #vae.to(accelerator.device, dtype=weight_dtype)
-                        gc.collect()
-                        torch.cuda.empty_cache()                            
-                        logger.info('SAVING...')
-
                         accelerator.save_state(save_path)
-                        # if args.pretrained_vae_model_name_or_path is None:
-                        #     vae.to(accelerator.device, dtype=torch.float32)
-                        # else:
-                        #     vae.to(accelerator.device, dtype=weight_dtype)
-                        # logger.info('MOVING TO GPU...')
-                        # logger.info(f"Saved state to {save_path}")
-                        # gc.collect()
-                        # torch.cuda.empty_cache()
-                        # unet.to(accelerator.device, dtype=weight_dtype)
-                        # if args.pretrained_vae_model_name_or_path is None:
-                        #     vae.to(accelerator.device, dtype=torch.float32)
-                        # else:
-                        #     vae.to(accelerator.device, dtype=weight_dtype)
-                        # text_encoder_one.to(accelerator.device, dtype=weight_dtype)
-                        # text_encoder_two.to(accelerator.device, dtype=weight_dtype)
-                        gc.collect()
-                        torch.cuda.empty_cache()
+                        logger.info(f"Saved state to {save_path}")
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
@@ -1187,13 +1144,6 @@ def main(args):
                     f" {args.validation_prompt}."
                 )
                 # create pipeline
-                if not args.train_text_encoder:
-                    text_encoder_one = text_encoder_cls_one.from_pretrained(
-                        args.pretrained_model_name_or_path, subfolder="text_encoder", revision=args.revision
-                    )
-                    text_encoder_two = text_encoder_cls_two.from_pretrained(
-                        args.pretrained_model_name_or_path, subfolder="text_encoder_2", revision=args.revision
-                    )
                 pipeline = StableDiffusionXLPipeline.from_pretrained(
                     args.pretrained_model_name_or_path,
                     vae=vae,
@@ -1238,14 +1188,13 @@ def main(args):
     accelerator.wait_for_everyone()
     if accelerator.is_main_process:
         unet = accelerator.unwrap_model(unet)
-        unet = unet.to(torch.float32)
         unet_lora_layers = unet_attn_processors_state_dict(unet)
 
         if args.train_text_encoder:
             text_encoder_one = accelerator.unwrap_model(text_encoder_one)
-            text_encoder_lora_layers = text_encoder_lora_state_dict(text_encoder_one.to(torch.float32))
+            text_encoder_lora_layers = text_encoder_lora_state_dict(text_encoder_one)
             text_encoder_two = accelerator.unwrap_model(text_encoder_two)
-            text_encoder_2_lora_layers = text_encoder_lora_state_dict(text_encoder_two.to(torch.float32))
+            text_encoder_2_lora_layers = text_encoder_lora_state_dict(text_encoder_two)
         else:
             text_encoder_lora_layers = None
             text_encoder_2_lora_layers = None
@@ -1257,44 +1206,45 @@ def main(args):
             text_encoder_2_lora_layers=text_encoder_2_lora_layers,
         )
 
+        del unet
+        del text_encoder_one
+        del text_encoder_two
+        del text_encoder_lora_layers
+        del text_encoder_2_lora_layers
+        torch.cuda.empty_cache()
+
         # Final inference
         # Load previous pipeline
-        # vae = AutoencoderKL.from_pretrained(
-        #     vae_path,
-        #     subfolder="vae" if args.pretrained_vae_model_name_or_path is None else None,
-        #     revision=args.revision,
-        #     torch_dtype=weight_dtype,
-        # )
-        # pipeline = StableDiffusionXLPipeline.from_pretrained(
-        #     args.pretrained_model_name_or_path, vae=vae, revision=args.revision, torch_dtype=weight_dtype
-        # )
-        # pipeline = pipeline.to(accelerator.device)
+        pipeline = StableDiffusionXLPipeline.from_pretrained(
+            args.pretrained_model_name_or_path, vae=vae, revision=args.revision, torch_dtype=weight_dtype
+        )
+        pipeline = pipeline.to(accelerator.device)
 
-        # # load attention processors
-        # pipeline.load_lora_weights(args.output_dir)
+        # load attention processors
+        pipeline.load_lora_weights(args.output_dir)
 
-        # # run inference
-        # images = []
-        # if args.validation_prompt and args.num_validation_images > 0:
-        #     generator = torch.Generator(device=accelerator.device).manual_seed(args.seed) if args.seed else None
-        #     images = [
-        #         pipeline(args.validation_prompt, num_inference_steps=25, generator=generator).images[0]
-        #         for _ in range(args.num_validation_images)
-        #     ]
+        # run inference
+        images = []
+        if args.validation_prompt and args.num_validation_images > 0:
+            generator = torch.Generator(device=accelerator.device).manual_seed(args.seed) if args.seed else None
+            images = [
+                pipeline(args.validation_prompt, num_inference_steps=25, generator=generator).images[0]
+                for _ in range(args.num_validation_images)
+            ]
 
-        #     for tracker in accelerator.trackers:
-        #         if tracker.name == "tensorboard":
-        #             np_images = np.stack([np.asarray(img) for img in images])
-        #             tracker.writer.add_images("test", np_images, epoch, dataformats="NHWC")
-        #         if tracker.name == "wandb":
-        #             tracker.log(
-        #                 {
-        #                     "test": [
-        #                         wandb.Image(image, caption=f"{i}: {args.validation_prompt}")
-        #                         for i, image in enumerate(images)
-        #                     ]
-        #                 }
-        #             )
+            for tracker in accelerator.trackers:
+                if tracker.name == "tensorboard":
+                    np_images = np.stack([np.asarray(img) for img in images])
+                    tracker.writer.add_images("test", np_images, epoch, dataformats="NHWC")
+                if tracker.name == "wandb":
+                    tracker.log(
+                        {
+                            "test": [
+                                wandb.Image(image, caption=f"{i}: {args.validation_prompt}")
+                                for i, image in enumerate(images)
+                            ]
+                        }
+                    )
 
         if args.push_to_hub:
             save_model_card(
