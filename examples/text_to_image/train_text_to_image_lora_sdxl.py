@@ -41,6 +41,7 @@ from torchvision import transforms
 from torchvision.transforms.functional import crop
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer, PretrainedConfig
+import gc 
 
 import diffusers
 from diffusers import (
@@ -605,6 +606,8 @@ def main(args):
             unet.enable_xformers_memory_efficient_attention()
         else:
             raise ValueError("xformers is not available. Make sure it is installed correctly")
+        
+    gc.collect()
 
     # now we will add new LoRA weights to the attention layers
     # Set correct lora layers
@@ -631,6 +634,8 @@ def main(args):
         unet_lora_parameters.extend(module.parameters())
 
     unet.set_attn_processor(unet_lora_attn_procs)
+
+    gc.collect()
 
     def compute_snr(timesteps):
         """
@@ -811,6 +816,8 @@ def main(args):
             raise ValueError(
                 f"--caption_column' value '{args.caption_column}' needs to be one of: {', '.join(column_names)}"
             )
+        
+    gc.collect()
 
     # Preprocessing the datasets.
     # We need to tokenize input captions and transform the images.
@@ -917,6 +924,8 @@ def main(args):
         num_warmup_steps=args.lr_warmup_steps * args.gradient_accumulation_steps,
         num_training_steps=args.max_train_steps * args.gradient_accumulation_steps,
     )
+
+    gc.collect()
 
     # Prepare everything with our `accelerator`.
     if args.train_text_encoder:
@@ -1126,6 +1135,11 @@ def main(args):
                                 for removing_checkpoint in removing_checkpoints:
                                     removing_checkpoint = os.path.join(args.output_dir, removing_checkpoint)
                                     shutil.rmtree(removing_checkpoint)
+
+                        # enable xformers (optional), requires xformers installation
+                        # pipe.enable_xformers_memory_efficient_attention()
+                        # # cpu offload for memory saving, requires accelerate>=0.17.0
+                        # pipe.enable_model_cpu_offload()
 
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
                         accelerator.save_state(save_path)
